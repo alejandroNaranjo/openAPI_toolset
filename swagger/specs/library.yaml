@@ -1,0 +1,621 @@
+openapi: 3.0.0
+info:
+  title:  - API Definitions
+  description: >
+    This openAPI spec describes all the endpoint needed for the moonshot
+    project.
+  version: 0.0.0
+servers:
+  - url: 'https://services.ge.com'
+    description: 'Optional server description, e.g. Main (production) server'
+  - url: 'http://staging-services.ge.com'
+    description: 'Optional server description, e.g. Internal staging server for testing'
+paths:
+  /acccounts/:
+    get:
+      summary: Returns a list of accounts the user has access to.
+      description: >-
+        Returns the list of accounts for a user which they have access to. This
+        is the list of account in the library, not for admin purposed
+      parameters:
+        - in: header
+          name: x-version
+          schema:
+            type: integer
+          required: true
+          description: The version of the endpoint which is being requested.
+        - in: header
+          name: authToken
+          schema:
+            type: string
+          required: true
+          description: The user's auth token to identify what the user has access to.
+      responses:
+        '200':
+          description: A list of accounts that a user has access to.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  group:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: "[{\
+                \"id\": 1000,\
+                \"name\": \"Uniqlo\",\
+                \"groupID\": 1,\
+                \"groupName\": \"Group 1\"\
+                },\
+                {\
+                  \"id\": 2000,\
+                  \"name\": \"Boohoo\",\
+                  \"groupID\": 2,\
+                  \"groupName\": \"Group 2\"
+                }]"
+
+  /assets/:
+    get:
+      summary: Returns a list of assets based on query parameter
+      description: >-
+        Returns a list of assets based on query parameter.
+        * https://services.ge.com/swagger/ui/index.html#!/Jobs/Asset_GetAssets has been used as a template for this endpoint.
+      parameters:
+        - in: header
+          name: x-version
+          schema:
+            type: integer
+          required: true
+          description: The version of the endpoint which is being requested.
+
+        - in: header
+          name: authToken
+          schema:
+            type: string
+          required: true
+          description: The user's auth token to identify what the user has access to.
+ 
+        - in: path
+          name: collectionType
+          schema:
+            type: string
+            enum:
+              - account
+              - folder
+              - gallery
+              - job
+              - lightboxes
+              - lightboxGroups
+              - uplink
+          required: true
+
+        - in: query
+          name: collectionId
+          schema:
+            type: string
+          required: true
+
+        - in: query
+          name: q
+          description: |
+            Search query in the format, **fieldname:value AND/OR fieldname:value**
+            * select
+            * alt
+            * approve
+            * kill
+            * star
+            * filename
+            * metadata[propertyID]
+            
+            **Example;** select:true AND kill:false
+          required: false
+          schema:
+            type: string
+
+        - in: query
+          name: filters
+          description: |
+            List of filters to apply. Consider using the Strign values instead of integers to make the request more readable.
+            * None = 0
+            * Plus_5 = 1
+            * Plus_4 = 2
+            * Plus_3 = 4
+            * Plus_2 = 8
+            * Plus_1 = 16
+            * Select = 32
+            * Alt = 64
+            * Approve = 128
+            * Killed = 256
+            * NonKilled = 512
+            * Flagged = 1024
+            * HasMarkup = 2048
+            * HasNotes = 4096
+            * NoColor = 8192
+            * Green = 16384
+            * Yellow = 32768
+            * Red = 65536
+            * Purple = 131072
+            * Blue = 262144
+            * Plus_0 = 524288
+            * Finalized = 1048576
+            * NotPending = 2097152
+            * Pending = 4194304
+            * NoStatus = 8388608
+            * Orange = 16777216
+            * Pink = 33554432
+            * Archived = 67108864
+            * Unarchived = 134217728
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - None
+                - Plus_5
+                - Plus_4
+                - Plus_3
+                - Plus_2
+                - Plus_1
+                - Select
+                - Alt
+                - Approve
+                - Killed
+                - NonKilled
+                - Flagged
+                - HasMarkup
+                - HasNotes
+                - NoColor
+                - Green
+                - Yellow
+                - Red
+                - Purple
+                - Blue
+                - Plus_0
+                - Finalized
+                - NotPending
+                - Pending
+                - NoStatus
+                - Orange
+                - Pink
+                - Archived
+                - Unarchived
+
+        - in: query
+          name: PageIndex
+          description: 0 based index for current page. (TODO- Consider making a cursor paging)
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+
+        - in : query
+          name: PageSize (limit)
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+
+        - in: query
+          name: sort
+          description: |
+            Type of sort to apply. Use `-` for descending sorting and `+` for ascending sorting. The format, **-/+:fieldname** Exa
+
+            * PlusRanking
+            * SelectRanking
+            * Killed
+            * Flagged
+            * UserDefined
+            * Filename
+            * DateCreated
+            * Foldername
+            * Status
+            * DateModified
+            * DateAdded
+            * AltRanking
+            * ApproveRanking
+            
+            **Example;** -DateAdded
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: A list of accounts that a user has access to.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/assetResponse'
+
+  /collectionTree/:
+    get:
+      summary: Returns a flatten list of collection to generate a tree. 
+      description: >-
+        Returns the list of of collections used to create a tree within the explorer
+      parameters:
+        - in: header
+          name: x-version
+          schema:
+            type: integer
+          required: true
+          description: The version of the endpoint which is being requested.
+        - in: header
+          name: authToken
+          schema:
+            type: string
+          required: true
+          description: The user's auth token to identify what the user has access to.
+        - in: query
+          name: collectionType
+          schema:
+            type: string
+          required: false
+          description: Node Tpye
+ 
+        - in: query
+          name: CollectionId
+          schema:
+            type: string
+          required: false
+          description: ID of node
+      responses:
+        '200':
+          description: A list of accounts that a user has access to.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: The id of the collection.
+                    name:
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                        - account
+                        - folder
+                        - gallery
+                        - job
+                        - lightbox
+                        - lightboxGroup
+                        - uplink
+                    parentId:
+                      type: integer
+                      description: The id of the parent collection. If null it won't be available.
+                    jobId:
+                      type: integer
+                      description: The id of job this belong to.
+                    hasParent:
+                      type: boolean
+              
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: "[{\
+                \"id\": 111,\
+                \"name\": \"moonshot photoshoot\",\
+                \"type\": \"folder\",\
+                \"parentId\": 10\"\
+                },\
+                {\
+                  \"id\": 11,\
+                  \"name\": \"geAccount\",\
+                  \"type\": \"job\",\
+                  \"parentId\": 1\"\
+                },\
+                {\
+                  \"id\": 1,\
+                  \"name\": \"geAccount\",\
+                  \"type\": \"account\",\
+                },\
+                {\
+                  \"id\": 2,\
+                  \"name\": \"moonshot lightboxes\",\
+                  \"type\": \"libraryGroup\",\
+                },\
+                {\
+                  \"id\": 22,\
+                  \"name\": \"geAccount\",\
+                  \"type\": \"job\",\
+                  \"parentId\": 2\"\
+                },\
+              ]"
+    
+  /assets/ratings/:
+    patch:
+      summary: Method to update the rating of assets in bulk.
+      description: |
+        Use this api to make update to multiple assets with multiple rating updates.
+        All assets in the requests will be set to the same ratings.
+        
+        There is a limit of **X** assets that can be sent in one request.
+      parameters:
+        - in: header
+          name: x-version
+          schema:
+            type: integer
+          required: true
+          description: The version of the endpoint which is being requested.
+        - in: header
+          name: authToken
+          schema:
+            type: string
+          required: true
+          description: The user's auth token to identify what the user has access to.
+ 
+      requestBody:
+        $ref: '#/components/requestBodies/assetRequest'
+
+      responses:
+        '200':
+          description: ok
+# ++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++
+components:
+
+  requestBodies:
+    assetRequest:
+      description: A JSON object containing asset rating information
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              assetIds:
+                type: array
+                items:
+                  type: string
+              rating:
+                $ref: '#/components/schemas/assetRating'
+
+
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+    assetResponse:
+      description: The response for an asset endpoint
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        byteCount:
+          type: integer
+        downloawdUrl:
+          type: string
+        hasMarkup:
+          type: boolean
+        notesCount:
+          type: integer
+          minimum: 0
+          
+        fileCategory:
+          description: This consolidates the isAudio, isVideo, isPDF field from v1 of the api
+          type: string
+          enum:
+            - audio
+            - video
+            - pdf
+            - other
+        oringalWidth:
+          description: The width of the orginal file in px.
+          type: integer
+        oringalHeight:
+          description: The height of the orginal file in px.
+          type: integer
+        processingStatus:
+          type: string
+          enum:
+            - unknown
+            - processing
+            - complete
+            - error
+        permissionStatus:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        collections:
+          type: object
+          properties:
+            id:
+              type: integer
+            type:
+              type: string
+        urls:
+          type: array
+          description: |
+            The "key" can be any of the following. NOTE - this combines ImageUrls and VideoUrls used previously.
+            
+            * SM_THUMB
+            * LG_THUMB
+            * PVIEW
+            * PVIEW_HR
+            * MED_RES
+            * PVIEW_VID
+            * PVIEW_VID_HIGH
+          
+          items:
+            $ref: '#/components/schemas/keyValue'
+        rating:
+          $ref: '#/components/schemas/assetRating'
+        permissions:
+          $ref: '#/components/schemas/assetRatingPermission'            
+
+    assetRating:
+      type: object
+      properties:
+        star:
+          type: integer
+          minimum: 0
+          maximum: 5
+        color:
+          type: string
+          enum:
+            - none
+            - red
+            - yellow
+            - green
+            - blue
+            - purple
+            - orange
+            - pink
+        pickFlag:
+          type: boolean
+        approve:
+          type: boolean
+        alt:
+          type: boolean
+        select:
+          type: boolean
+        kill:
+          type: boolean
+        # approveLabelsOption2:
+        #   type: array
+        #   description: This is just an example, the alternative is to have all of these as boolean.
+        #   items:
+        #     type: string
+        #     enum:
+        #       - approve
+        #       - alt
+        #       - select
+        #       - kill
+
+    assetRatingPermission:
+      type: object
+      properties:
+        star:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        color:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        approve:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        alt:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        select:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        kill:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        processingStatus:
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        notes:
+          description: Permission to view/modify the notes.
+          type: string
+          enum:
+            - hide
+            - view
+            - modify
+        # approveLabelsOption2:
+        #   type: array
+        #   description: This is just an example, the alternative is to have all of these as boolean.
+        #   items:
+        #     type: object
+        #     properties:
+        #       key:
+        #         type: string
+        #         enum:
+        #           - approve
+        #           - alt
+        #           - select
+        #           - kill
+        #       value:
+        #         type: string
+        #         enum:
+        #           - hide
+        #           - view
+        #           - modify
+    
+    keyValue:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+security:
+  - BasicAuth: []
