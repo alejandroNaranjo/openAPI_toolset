@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
-  title:  - API Definitions
-  description: >
+  title: Globaledit - API Definitions
+  description: |
     This openAPI spec describes all the endpoint needed for the moonshot
     project.
   version: 0.0.0
@@ -89,7 +89,7 @@ paths:
             type: string
           required: true
           description: The user's auth token to identify what the user has access to.
- 
+
         - in: path
           name: collectionType
           schema:
@@ -121,7 +121,7 @@ paths:
             * star
             * filename
             * metadata[propertyID]
-            
+
             **Example;** select:true AND kill:false
           required: false
           schema:
@@ -231,7 +231,7 @@ paths:
             * DateAdded
             * AltRanking
             * ApproveRanking
-            
+
             **Example;** -DateAdded
           schema:
             type: string
@@ -246,7 +246,7 @@ paths:
 
   /collectionTree/:
     get:
-      summary: Returns a flatten list of collection to generate a tree. 
+      summary: Returns a flatten list of collection to generate a tree.
       description: >-
         Returns the list of of collections used to create a tree within the explorer
       parameters:
@@ -268,7 +268,7 @@ paths:
             type: string
           required: false
           description: Node Tpye
- 
+
         - in: query
           name: CollectionId
           schema:
@@ -277,38 +277,12 @@ paths:
           description: ID of node
       responses:
         '200':
-          description: A list of accounts that a user has access to.
+          description: A list of collections at this node and one level deep.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                      description: The id of the collection.
-                    name:
-                      type: string
-                    type:
-                      type: string
-                      enum:
-                        - account
-                        - folder
-                        - gallery
-                        - job
-                        - lightbox
-                        - lightboxGroup
-                        - uplink
-                    parentId:
-                      type: integer
-                      description: The id of the parent collection. If null it won't be available.
-                    jobId:
-                      type: integer
-                      description: The id of job this belong to.
-                    hasParent:
-                      type: boolean
-              
+                $ref: '#/components/schemas/collections'
+
         '401':
           $ref: '#/components/responses/Unauthorized'
       x-amazon-apigateway-integration:
@@ -345,14 +319,14 @@ paths:
                   \"parentId\": 2\"\
                 },\
               ]"
-    
+
   /assets/ratings/:
     patch:
       summary: Method to update the rating of assets in bulk.
       description: |
         Use this api to make update to multiple assets with multiple rating updates.
         All assets in the requests will be set to the same ratings.
-        
+
         There is a limit of **X** assets that can be sent in one request.
       parameters:
         - in: header
@@ -367,7 +341,7 @@ paths:
             type: string
           required: true
           description: The user's auth token to identify what the user has access to.
- 
+
       requestBody:
         $ref: '#/components/requestBodies/assetRequest'
 
@@ -438,7 +412,7 @@ components:
         notesCount:
           type: integer
           minimum: 0
-          
+
         fileCategory:
           description: This consolidates the isAudio, isVideo, isPDF field from v1 of the api
           type: string
@@ -448,10 +422,10 @@ components:
             - pdf
             - other
         oringalWidth:
-          description: The width of the orginal file in px.
+          description: The width of the original file in px.
           type: integer
         oringalHeight:
-          description: The height of the orginal file in px.
+          description: The height of the original file in px.
           type: integer
         processingStatus:
           type: string
@@ -477,7 +451,7 @@ components:
           type: array
           description: |
             The "key" can be any of the following. NOTE - this combines ImageUrls and VideoUrls used previously.
-            
+
             * SM_THUMB
             * LG_THUMB
             * PVIEW
@@ -485,13 +459,13 @@ components:
             * MED_RES
             * PVIEW_VID
             * PVIEW_VID_HIGH
-          
+
           items:
             $ref: '#/components/schemas/keyValue'
         rating:
           $ref: '#/components/schemas/assetRating'
         permissions:
-          $ref: '#/components/schemas/assetRatingPermission'            
+          $ref: '#/components/schemas/assetRatingPermission'
 
     assetRating:
       type: object
@@ -603,7 +577,7 @@ components:
         #           - hide
         #           - view
         #           - modify
-    
+
     keyValue:
       type: object
       properties:
@@ -611,7 +585,35 @@ components:
           type: string
         value:
           type: string
-
+    collections:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            description: The id of the collection.
+          name:
+            type: string
+          type:
+            type: string
+            enum:
+              - account
+              - folder
+              - gallery
+              - job
+              - lightbox
+              - lightboxGroup
+              - uplink
+          parentId:
+            type: integer
+            description: The id of the parent collection. If null it won't be available.
+          jobId:
+            type: integer
+            description: The id of job this belong to.
+          hasChildren:
+            type: boolean
+            description: This can be used to figure if a user can navigate to a child node.
 
   securitySchemes:
     BasicAuth:

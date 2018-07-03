@@ -1,0 +1,86 @@
+openapi: 3.0.0
+info:
+  title: Globaledit - API Definitions
+  description: |
+    This openAPI spec describes all the endpoint needed for the moonshot project.
+  version: 0.0.0
+servers:
+  - url: https://services.globaledit.com
+    description: Optional server description, e.g. Main (production) server
+  - url: http://staging-services.globaledit.com
+    description: Optional server description, e.g. Internal staging server for testing
+paths:
+  /acccounts/:
+    get:
+      summary: Returns a list of accounts the user has access to.
+      description: Returns the list of accounts for a user which they have access to. This is the list of account in the library, not for admin purposed
+      parameters:
+        - in: header
+          name: x-version
+          schema:
+            type: integer
+          required: true
+          description: The version of the endpoint which is being requested.
+        - in: header
+          name: authToken
+          schema:
+            type: string
+          required: true
+          description: The user's auth token to identify what the user has access to.
+      responses:
+        '200':    # status code
+          description: A list of accounts that a user has access to.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  id: 
+                    type: integer
+                  name:
+                    type: string
+                  group:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+        '401':    # status code
+          $ref: '#/components/responses/Unauthorized' 
+
+
+components:
+
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    # Schema for error response body
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+security:
+  - BasicAuth: []
